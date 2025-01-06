@@ -9,21 +9,21 @@ React Testing Library 是一个强大的测试工具，可以帮助你测试 Rea
 **步骤**：
 
 1. **创建一个新的项目文件夹**：
-
+   
    ```sh
    mkdir my-hook-testing
    cd my-hook-testing
    npm init -y
    ```
-   
-2. **安装依赖**：
 
+2. **安装依赖**：
+   
    ```sh
    npm install react react-dom @testing-library/react @testing-library/jest-dom jest
    ```
-   
-3. **设置 Jest 配置**（可选）： 在 `package.json` 中添加 Jest 配置：
 
+3. **设置 Jest 配置**（可选）： 在 `package.json` 中添加 Jest 配置：
+   
    ```json
    "scripts": {
      "test": "jest"
@@ -32,9 +32,9 @@ React Testing Library 是一个强大的测试工具，可以帮助你测试 Rea
      "testEnvironment": "jsdom"
    }
    ```
-   
-4. **编写你的自定义 hook**： 在 `src` 文件夹中创建一个文件，例如 `useMyHook.js`：
 
+4. **编写你的自定义 hook**： 在 `src` 文件夹中创建一个文件，例如 `useMyHook.js`：
+   
    ```js
    import { useState } from 'react';
    
@@ -49,9 +49,9 @@ React Testing Library 是一个强大的测试工具，可以帮助你测试 Rea
    
    export default useMyHook;
    ```
-   
-5. **编写测试用例**： 在 `src` 文件夹中创建一个测试文件，例如 `useMyHook.test.js`：
 
+5. **编写测试用例**： 在 `src` 文件夹中创建一个测试文件，例如 `useMyHook.test.js`：
+   
    ```javascript
    import { renderHook, act } from '@testing-library/react-hooks';
    import useMyHook from './useMyHook';
@@ -72,9 +72,9 @@ React Testing Library 是一个强大的测试工具，可以帮助你测试 Rea
      expect(result.current.value).toBe(0);
    });
    ```
-   
-6. **运行测试**：
 
+6. **运行测试**：
+   
    ```sh
    npm test
    ```
@@ -86,7 +86,7 @@ Storybook 是一个独立的工具，可以让你在隔离环境中开发和测�
 **步骤**：
 
 1. **在现有项目中安装 Storybook**：
-
+   
    ```
    sh
    复制代码
@@ -94,7 +94,7 @@ Storybook 是一个独立的工具，可以让你在隔离环境中开发和测�
    ```
 
 2. **创建一个 story 来测试你的 hook**： 在 `src` 文件夹中创建一个文件，例如 `useMyHook.stories.js`：
-
+   
    ```
    javascript
    复制代码
@@ -118,7 +118,7 @@ Storybook 是一个独立的工具，可以让你在隔离环境中开发和测�
    ```
 
 3. **运行 Storybook**：
-
+   
    ```
    sh
    复制代码
@@ -137,8 +137,6 @@ CodeSandbox 是一个在线代码编辑器，允许你快速创建、共享和�
 ### 总结
 
 虽然新建一个 React 项目是测试自定义 hook 的一种方法，但使用 React Testing Library、Storybook 或 CodeSandbox 等工具可以更方便、更高效地测试你的 hook，而无需创建一个完整的项目。这些方法不仅节省时间，还可以提高你的开发和测试效率。
-
-
 
 ---
 
