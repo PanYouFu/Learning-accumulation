@@ -152,7 +152,6 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
-
 ```
 
 ### 4. 检查配置文件是否正确
@@ -261,7 +260,7 @@ nginx -t
 如果没有问题，可以重启 Nginx 以使新配置生效：
 
 ```bash
-brew services restart nginx`
+brew services restart nginx
 ```
 
 ### 示例：使用多个站点配置
@@ -389,6 +388,24 @@ http {
 
 ### 重启Nginx
 
+```bash
+brew services restart nginx
+--
+nginx -s reload
+```
+
+关闭nginx
+
+```
+nginx -s stop
+```
+
+重新加载nginx（重启nginx）
+
+```
+nginx -s reload
+```
+
 ### 访问项目
 
 在同一个局域网内的用户即可通过ip即可访问项目
@@ -396,8 +413,6 @@ http {
 http://10.65.106.62:8081/
 
 <img title="" src="file:///Users/wj/Library/Application%20Support/marktext/images/2024-10-17-21-12-27-image.png" alt="" width="218">
-
-
 
 *PS：为什么需要在同一个局域网内呢*
 
@@ -427,6 +442,10 @@ http://10.65.106.62:8081/
 
 例如，`ngrok` 可以将你的本地 `http://localhost:8081` 暴露到一个互联网可访问的 URL 上，如 `https://random.ngrok.io`，其他用户通过这个 URL 即可访问你的本地项目。
 
+pps:如何配置多个前端项目呢？
+
+[使用nginx部署多个前端项目常见3种方法来实现在一台服务器上使用nginx部署多个前端项目的方法](https://juejin.cn/post/6844904183879958541)
+
 ---
 
 ## PS：
@@ -450,7 +469,7 @@ server {
 }
 ```
 
-### 2. 解释配置
+#### 2. 解释配置
 
 - **`listen 8081 ssl;`**: 指定监听的端口为 8081，并启用 HTTPS。
 - **`server_name xxx;`**: 用你的域名替换 `xxx`。如果没有域名，可以使用本机的 IP 地址或 `localhost`。
@@ -459,16 +478,101 @@ server {
 - **`index index.html;`**: 设置默认首页为 `index.html`。
 - **`try_files $uri /index.html;`**: React 是单页面应用，需要此配置来处理路由。当请求的路径不存在时，Nginx 会将请求重定向到 `index.html`。
 
-
-
-
-
-### 如何验证 `root` 路径
+#### 如何验证 `root` 路径
 
 - 默认情况下，`root html;` 在 Homebrew 安装的 Nginx 中通常指向 `/usr/local/var/www/html`。
 - 你可以通过 `nginx -V` 命令查看 Nginx 的安装路径。
 - 可以根据需要将 `root` 修改为自定义的绝对路径，指向你想托管的文件目录。
 
+```nginx
+server {
+    listen 80;
+    server_name mywebapp.com;
+    # 自动跳转到 HTTPS
+    return 301 https://$server_name$request_uri;
+}
 
+server {
+    listen 443 ssl;
+    server_name mywebapp.com;
+    # SSL/TLS 相关配置
+    ssl on;
+    ssl_certificate /path/to/certfile.crt;
+    ssl_certificate_key /path/to/keyfile.key;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
 
+    location / {
+        root /var/www/mywebapp;
+        index index.html;
+    }
+    // 转发路径中含有api的请求到后端服务器
+    location /api/ {
+        proxy_pass http://127.0.0.1:8000/;
+    }
+}
+```
 
+在上述示例代码中，我们创建了一个名为 mywebapp.com 的虚拟主机，并使用了 SSL/TLS 加密协议。其中，ssl_certificate 和 ssl_certificate_key 分别指定 [SSL 证书](https://cloud.tencent.com/product/symantecssl?from_column=20065&from=20065)和私钥的路径。
+
+### 配置负载均衡
+
+> https://docshome.gitbook.io/nginx-docs/readme/shi-yong-nginx-zuo-wei-http-fu-zai-jun-heng-qi
+
+#### 负载均衡常用手段
+
+##### 轮询
+
+该算法遍历服务器节点列表，并按节点次序每轮选择一台服务器处理请求。当所有节点均被调用过一次后，该算法将从第一个节点开始重新一轮遍历。
+
+##### 加权轮询
+
+在加权轮询中，每个服务器会有各自的 `weight`。一般情况下，`weight` 的值越大意味着该服务器的性能越好，可以承载更多的请求。该算法中，客户端的请求按权值比例分配，当一个请求到达时，优先为其分配权值最大的服务器。
+
+##### IP 哈希（IP hash）
+
+`ip_hash` 依据发出请求的客户端 IP 的 hash 值来分配服务器，该算法可以保证同 IP 发出的请求映射到同一服务器，或者具有相同 hash 值的不同 IP 映射到同一服务器。
+
+**解决服务器session不共享问题**
+
+Session 不共享问题是说，假设用户已经登录过，此时发出的请求被分配到了 A 服务器，但 A 服务器突然宕机，用户的请求则会被转发到 B 服务器。但由于 Session 不共享，B 无法直接读取用户的登录信息来继续执行其他操作。
+
+**灰度发布**
+
+我们可以利用 `ip_hash`，将一部分 IP 下的请求转发到运行新版本服务的服务器，另一部分转发到旧版本服务器上，实现灰度发布。再者，如遇到文件过大导致请求超时的情况，也可以利用 `ip_hash` 进行文件的分片上传，它可以保证同客户端发出的文件切片转发到同一服务器，利于其接收切片以及后续的文件合并操作。
+
+##### 最小连接数（Least Connections）
+
+假设共有 N 台服务器，当有新的请求出现时，遍历服务器节点列表并选取其中连接数最小的一台服务器来响应当前请求。连接数可以理解为当前处理的请求数。
+
+#### 使用upstream模块
+
+PS：
+
+RUN mkdir -p /app/.next/cache/images && chown -R nextjs:nodejs /app/.next
+
+RUN：
+
+这是一个 Dockerfile 指令，用于在构建镜像时执行命令。每个 RUN 指令都会在一个新的镜像层中执行，并将结果保存到镜像中。
+
+mkdir -p /app/.next/cache/images：
+
+mkdir 是一个命令，用于创建目录。
+
+-p 选项表示“父目录”，即如果父目录不存在，则会自动创建所需的父目录。这样可以确保 /app/.next/cache/images 目录及其所有父目录（如 /app/.next 和 /app/.next/cache）都被创建。
+
+/app/.next/cache/images 是要创建的目录的完整路径。
+
+&&：
+
+这是一个逻辑运算符，用于连接两个命令。只有当前一个命令成功执行（返回状态码为0）时，后一个命令才会执行。这可以确保只有在成功创建目录后，才会执行后面的命令。
+
+chown -R nextjs:nodejs /app/.next：
+
+chown 是一个命令，用于更改文件或目录的所有者和所属组。
+
+-R 选项表示“递归”，即将更改应用于指定目录及其所有子目录和文件。
+
+nextjs:nodejs 指定新的所有者和组。这里，nextjs 是新的用户，nodejs 是新的用户组。
+
+- /app/.next 是要更改所有者和组的目录路径。
